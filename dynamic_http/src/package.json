@@ -9,6 +9,7 @@
   "author": "David Truan, Lucas Elisei",
   "license": "ISC",
   "dependencies": {
+    "async": "^2.4.1",
     "datamuse": "^1.0.5",
     "express": "^4.15.3"
   }

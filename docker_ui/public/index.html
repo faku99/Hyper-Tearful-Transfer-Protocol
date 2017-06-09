@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>Hyper Tearful Transfer Protocol</title>
+
+    <!-- Angular -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
+
+    <!-- JQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+    <!-- Foundation framework -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.3.1/css/foundation.min.css" />
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/foundicons/3.0.0/foundation-icons.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.3.1/js/foundation.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-moment/1.0.1/angular-moment.min.js"></script>
+
+    <link rel="stylesheet" href="css/style.css" />
+
+    <!-- Angular script -->
+    <script src="js/app.js"></script>
+</head>
+
+<body ng-app="http" ng-controller="controller">
+    <div class="row">
+        <center>
+            <h1>Docker management UI <small>by truanisei</small></h1>
+        </center>
+
+        <h4>Images list</h4>
+        <table class="unstriped hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Created</th>
+                    <th>Size</th>
+                    <th width="20"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="image in imagesList">
+                    <td>{{ image.RepoTags[0] }}</td>
+                    <td>{{ image.Created }}</td>
+                    <td>{{ image.Size }}</td>
+                    <td><i class="fi-plus clickable" title="Create container" ng-click="createContainer($index)"></i></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h4>Containers list</h4>
+        <table class="unstriped hover">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Image</th>
+                    <th>State</th>
+                    <th>Status</th>
+                    <th width="80"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="container in containersList">
+                    <td>{{ container.Id }}</td>
+                    <td>{{ container.Image }}</td>
+                    <td>{{ container.State }}</td>
+                    <td>{{ container.Status }}</td>
+                    <td>
+                        <i class="fi-play clickable" title="Start container" ng-click="startContainer($index)"></i>
+                        &nbsp;
+                        <i class="fi-stop clickable" title="Kill container" ng-click="killContainer($index)"></i>
+                        &nbsp;
+                        <i class="fi-trash clickable" title="Remove container" ng-click="removeContainer($index)"></i>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="clearfix button-group float-right">
+            <button class="button primary" ng-click="killAllContainers()">Kill all containers</button>
+            <button class="button primary" ng-click="removeAllContainers()">Remove all containers</button>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,30 @@
+{
+  "name": "docker-ui",
+  "version": "1.0.0",
+  "description": "Management UI for Docker",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/faku99/Hyper-Tearful-Transfer-Protocol.git"
+  },
+  "keywords": [
+    "ui",
+    "docker",
+    "management"
+  ],
+  "author": "faku99, Daxidz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/faku99/Hyper-Tearful-Transfer-Protocol/issues"
+  },
+  "homepage": "https://github.com/faku99/Hyper-Tearful-Transfer-Protocol#readme",
+  "dependencies": {
+    "body-parser": "^1.17.2",
+    "dockerode": "^2.4.3",
+    "express": "^4.15.3"
+  }
+}

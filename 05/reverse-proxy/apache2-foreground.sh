@@ -1,10 +1,13 @@
 #!/bin/bash
 # Add the config setup part
 echo "Setting up the conf file..."
+touch /etc/apache2/sites-available/001-default.conf
 php /var/apache2/templates/conf-template.php > /etc/apache2/sites-available/001-default.conf
 
 echo "Done!"
 more /etc/apache2/sites-available/001-default.conf
+
+a2ensite 001-*
 
 #!/bin/bash
 set -e

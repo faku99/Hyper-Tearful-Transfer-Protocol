@@ -8,4 +8,4 @@ COPY templates /var/apache2/templates
 
 
 RUN a2enmod proxy proxy_http
-RUN a2ensite 000-* 001-*
+RUN a2ensite 000-*

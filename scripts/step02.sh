@@ -8,7 +8,7 @@ docker rm $(docker ps -aq)
 docker rmi truanisei/dynamic_http
 docker rmi $(docker images -q -f dangling=true)
 
-docker build -t truanisei/dynamic_http ./dynamic_http/
+docker build -t truanisei/dynamic_http $docker_dir/dynamic_http/
 
 docker run -d -p 3000:3000 truanisei/dynamic_http
 

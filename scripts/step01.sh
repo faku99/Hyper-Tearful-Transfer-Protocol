@@ -8,7 +8,7 @@ docker rm $(docker ps -aq)
 docker rmi truanisei/static_http
 docker rmi $(docker images -q -f dangling=true)
 
-docker build -t truanisei/static_http ./static_http/
+docker build -t truanisei/static_http $docker_dir/static_http/
 
 docker run -d -p 8080:80 truanisei/static_http
 

@@ -2,7 +2,7 @@
 #
 # Menu for launching steps.
 
-docker_dir=$(pwd)
+docker_dir=$(pwd)/docker
 scripts_dir=scripts
 
 echo "Available steps:"

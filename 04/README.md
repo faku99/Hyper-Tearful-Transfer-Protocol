@@ -8,15 +8,47 @@ We started by changing the `index.html` file in our static server developped in 
 
 We found the id: `homeHeading`.
 
-We now have to add our script into the `index.html` file. Our script is called `acronym.js` and is at the same level as `index.html`.
+We now have to add our script into the `index.html` file. Our script is called `ajax.js` and is at the same level as `index.html`.
 
 ```
 ...
 
 <!-- Generate the HTTP acronym -->
-<script src="acronym.js"></script>
+<script src="ajax.js"></script>
 ```
 
 ## Developping the script with JQuery
-The puropse of the script is to retrieve the JSON from our dynamic server container and to change the element previously found.
-To do so we use the **JQuery** library
+The purpose of the script is to retrieve the JSON from our dynamic server container and to change the element previously found.
+To do so we use the **JQuery** library. It allows us to modify an element of the html file inside a script.
+
+``` javascript
+$(function() {
+    function getAcronym() {
+        $.getJSON("/api/random/", function( acronym ) {
+            var message = "";
+            message = acronym[0] + " " + acronym[1] + " " + acronym[2] + " " + acronym[3];
+
+            $("#homeHeading").text(message).css('color', 'black');;
+        });
+    };
+
+    setInterval(getAcronym, 3000);
+
+});
+```
+
+First we `$.getJSON(/api/random/, ...)` to retrieve our JSON payload containing the words.
+
+Then we create a message wth the four words. Finally the `$("#homeHeading")...` is where we get our element and modifiy it with our text. The # means we want retrieve it by id (which is homeHeading in our case).
+
+## Testing
+We now have a fully operating reverse proxy and a static frontend wich is updated with the datas from the dynamic backend.
+We
+
+![AJAX requests done by the browser](images/dynamic_request.png)
+
+![Content of a payload](images/payload_content.png)
+
+We see the AJAX request made by the browser and the content of one of them.
+And here is the result (sadly we couldn't put a gif to show it).
+![Result](images/result.png)

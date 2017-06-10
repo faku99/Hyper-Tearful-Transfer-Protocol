@@ -157,4 +157,47 @@ And here is the result (sadly we couldn't put a gif to show it).
 
 
 ## Step 5: Dynamic reverse proxy configuration
-In this step
+In this step, we will show you a solution to get rid of the static configuration of the reverse proxy. The goal is to have a way to launch the containers in what order we prefer and having a working reverse proxy without needing to rebuild the image.
+
+### Our solution
+We first tried the method shown in the webcast but we weren't really happy with the result as it required to inspect the containers and it use a pretty custom solution to create the conf file.
+We chosed to work with the network offered by Docker and it internal DNS.
+
+### Docker network
+We can create multiple [Docker networks](https://docs.docker.com/engine/userguide/networking/#user-defined-networks) in the Docker machine. The container can join this network with a name. Then the network has an internal DNS which is useful in our case so we don't have to work with ip.   
+
+``` bash
+docker build -t truanisei/ajax_http ./ajax_http/
+docker build -t truanisei/dynamic_http ./dynamic_http/
+docker build -t truanisei/dynamic_revproxy ./dynamic_revproxy/
+
+# Check if network exists.
+docker network inspect resnetwork &> /dev/null
+if (( $? == "1" )); then
+    docker network create resnetwork
+fi
+
+docker run -d --name=proxy --network resnetwork -p 8080:80 truanisei/dynamic_revproxy
+docker run -d --name=httpnode --network resnetwork truanisei/ajax_http
+docker run -d --name=apinode --network resnetwork truanisei/dynamic_http
+```
+
+First we create our own network resnetwork if it is not already existing. It allows us to enable DNS resolution, thing the default Docker network doesn't do.
+We see the `--network resnetwork` option in the run command.
+
+### Changes in the configuration file
+To make it work with the DNS we had to modify our previous configuration file (the static one).
+
+``` bash
+<VirtualHost *:80>
+    ServerName truanisei.res.ch
+
+    ProxyPass "/api/random/" "http://apinode:3000/api/random/" disablereuse=On
+    ProxyPassReverse "/api/random/" "http://apinode:3000/api/random/" disablereuse=On
+
+    ProxyPass "/" "http://httpnode:80/" disablereuse=On
+    ProxyPassReverse "/" "http://httpnode:80/" disablereuse=On
+</VirtualHost>
+```
+We had to replace the ip by the names we will set when typing the `run` command.   
+The `disablereuse=On` is a precaution took in case you stop the container and run it again and it doesn't have the same ip. It tells the DNS not to save the ip for a given name in its cache.

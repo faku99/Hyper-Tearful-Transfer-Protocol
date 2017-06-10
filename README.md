@@ -1,25 +1,43 @@
-# Hyper-Tearful-Transfer-Protocol
+# Hyper Tearful Transfer Protocol
 
 ## Introduction
-For the 5th RES lab we were asked to get familiar with the HTTP protocol and infrastructure through serveral tasks. This repository contains different folders which are docker images according to the specifications given [here](https://github.com/SoftEng-HEIGVD/Teaching-HEIGVD-RES-2017-Labo-HTTPInfra).
+For the 5th RES lab, we were asked to get familiar with the HTTP protocol and infrastructure through several tasks.
+
+This repository contains our solutions to the specifications given [here](https://github.com/SoftEng-HEIGVD/Teaching-HEIGVD-RES-2017-Labo-HTTPInfra).
+It is composed of folders and files, which are:
+- `docker/`: contains all docker images needed for this lab assignment.
+- `docker_ui/`: contains a management UI for Docker.
+- `images/`: contains figures used in this report.
+- `scripts/`: scripts used by `start.sh`. They MUST NOT be executed directly.
+- `start.sh`: script used to easily launch containers for each step.
 
 ## Step 1: Static HTTP server with apache httpd
 
-### Introduction
-In this step, we will setup a static apache httpd server and run it into a Docker image. The goal is to have a nice looking site (using bootstrap templates) which we can access through a web browser and serving static content.
+In this step, we will setup a static Apache httpd server and run it into a Docker image. The goal is to have a nice looking site (using bootstrap templates) which we can access through a web browser and serving static content.
 
-### Configuring our apache image
-We chosed the [php 7.1.5 apache](https://github.com/docker-library/php/blob/c48c629568bc166b58b271114d0b44ea6d5cfa09/7.1/apache/Dockerfile) for our base image. It packs all the tools we need for our static httpd server (file system already configured, php installed, ...).
+Files can be found [here](docker/static_http).
 
-### Writing the Dockerfile
-As we are using an almost ready-to-go image, there wasn't a lot to do in the Dockerfile.
+### Configuration
+We chose [php:apache](https://hub.docker.com/_/php/) as our base image. It packs all the tools we need for our static httpd server (file system already configured, php and apache installed, ...).
+
+### Dockerfile
+As we are using an almost ready-to-go image so there wasn't a lot to do in the Dockerfile.
 
 ```
-FROM php:7.1.5-apache
+FROM php:apache
 
-# Copy the content of the folder src, the folder containing our contents for the site, into /var/www/html which is the default folder for the http contents in the image.
-COPY src/ /var/www/html
+# Traefik configuration
+LABEL "traefik.backend"="httpnode"
+LABEL "traefik.backend.loadbalancer.sticky"="false"
+LABEL "traefik.frontend.rule"="PathPrefix: /"
+LABEL "traefik.port"="80"
+
+COPY src /var/www/html
 ```
+
+Don't mind *Traefik configuration* for now, it will be used later for additional steps.
+
+As you can see, we simply copy the folder containing
 
 ### Adding the contents to the image
 We now have an almost ready image. We have to put the static content into it to be able to display our site in the browser.  

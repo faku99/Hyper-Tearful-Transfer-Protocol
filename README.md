@@ -1,6 +1,7 @@
 # Hyper Tearful Transfer Protocol
 
 ## Introduction
+
 For the 5th RES lab, we were asked to get familiar with the HTTP protocol and infrastructure through several tasks.
 
 This repository contains our solutions to the specifications given [here](https://github.com/SoftEng-HEIGVD/Teaching-HEIGVD-RES-2017-Labo-HTTPInfra).
@@ -8,7 +9,7 @@ It is composed of folders and files, which are:
 - `docker/`: contains all docker images needed for this lab assignment.
 - `docker_ui/`: contains a management UI for Docker.
 - `images/`: contains figures used in this report.
-- `scripts/`: scripts used by `start.sh`. They MUST NOT be executed directly.
+- `scripts/`: scripts used by `start.sh`. They **MUST NOT** be executed directly.
 - `start.sh`: script used to easily launch containers for each step.
 
 ## Step 1: Static HTTP server with apache httpd
@@ -18,12 +19,14 @@ In this step, we will setup a static Apache httpd server and run it into a Docke
 Files can be found [here](docker/static_http).
 
 ### Configuration
+
 We chose [php:apache](https://hub.docker.com/_/php/) as our base image. It packs all the tools we need for our static httpd server (file system already configured, php and apache installed, ...).
 
 We also had to choose a bootstrap template so our site has a nice looking visual. To do so, we used [Creative](https://startbootstrap.com/template-overviews/creative/). We modified it a bit so it uses CDN links instead of vendor scripts for loading its dependencies.
 
 ### Dockerfile
-As we are using an almost ready-to-go image so there wasn't a lot to do in the Dockerfile.
+
+As we are using an almost ready-to-go image, there wasn't a lot to do in the Dockerfile.
 
 ```
 FROM php:apache
@@ -34,34 +37,52 @@ COPY src /var/www/html
 As you can see, we simply copy the folder containing the sources into the folder `/var/www/html` from which Apache will display content.
 
 ### Launching and testing
-To launch the website, simply execute the script `start.sh` and navigate to http://127.0.0.1:8080.
+
+To launch the website, simply execute the script `start.sh`, select step 01 and navigate to http://127.0.0.1:8080.
 
 You should be greeted by an astonishing single-page website that fulfill the requested assignment for this step.
 
 ## Step 2: Dynamic HTTP server with express.js
-In this step we will setup a HTTP sever in **NodeJS** using the **express.js** node module.
 
-### The Docker image
-We will use the [node:alpine](https://github.com/nodejs/docker-node/blob/a8eef541ef29ae81f53f0fdd177ec20bbead3ed2/8.1/alpine/Dockerfile) image for this step.
-The Dockerfile is pretty simple since we won't need any special configuration other than our files (server.js and app.js).
+In this step, we will setup a dynamic HTTP server written with [Node.js](https://nodejs.org/) using the [express.js](https://expressjs.com/) node framework.
+
+This server will be used to generate random content and serve it as a JSON payload. The content will be an array of random words whose acronym is HTTP.
+
+Files can be found [here](docker/dynamic_http/).
+
+### Configuration
+
+We chose [node](https://hub.docker.com/_/node/) as our base image. It is required since our HTTP server is based on this technology. We also used the [Datamuse API](http://www.datamuse.com/api/) through a NPM module called [datamuse](https://www.npmjs.com/package/datamuse).
+
+Finally, to make four requests in parallel and wait for their result, we used the NPM module [async](https://www.npmjs.com/package/async).
+
+The JSON payload has the following form:
 ```
-FROM node:alpine
+["Honcho","Tamarind","Take","Pooch"]
+```
+
+### Dockerfile
+
+```
+FROM node:latest
 
 COPY src /opt/app
+
+WORKDIR /opt/app
+RUN npm install
 
 CMD ["node", "/opt/app/server.js"]
 ```
 
-It will execute our `server.js` when the container start.
+This Dockerfile simply copy source files to `/opt/app/`. Then, we set the working directory as `/opt/app/` and run `npm install` to install NPM dependencies.
 
-### Server.js
-The main purpose of this step is to serve a dynamic content to the user when asked to. It should be a JSON containing some random datas chosen by us.
-We have coded a server in NodeJS using the express node module. For the datas, it sends a JSON payload containing four words wich first letters form the acronym *HTTP*. It listens on the port **3000**.
-The payload can be accessed on at the `/api/random` path.  
-![Getting the payload](images/payload.png)
+Once done, the server is launched.
 
-We also developped a small app.js to test it with a button.
+### Launching and testing
 
+To launch the server, simply execute the script `start.sh`, select step 02 and navigate to http://127.0.0.1:8080/.
+
+You should receive an array of words whose acronym is HTTP, which fulfill the requested assignment for this step. To refresh the data, simply reload the page.
 
 ## Step 3: Reverse proxy with apache (static configuration)
 In this step, we will configure a php apache to be used as a reverse proxy to serve our both server (static and dynamic) developped in the steps 1 and 2.

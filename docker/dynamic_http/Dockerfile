@@ -9,6 +9,6 @@ RUN npm install
 LABEL "traefik.backend"="apinode"
 LABEL "traefik.backend.loadbalancer.sticky"="true"
 LABEL "traefik.frontend.rule"="PathPrefixStrip: /api/random"
-LABEL "traefik.port"="3000"
+LABEL "traefik.port"="80"
 
 CMD ["node", "/opt/app/server.js"]

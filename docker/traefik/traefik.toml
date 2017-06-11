@@ -5,5 +5,4 @@ address = ":9000"
 # Docker configuration
 [docker]
 domain = "truanisei.res.ch"
-#endpoint = "unix:///var/run/docker.sock"
 watch = true

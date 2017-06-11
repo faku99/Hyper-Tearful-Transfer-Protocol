@@ -193,7 +193,7 @@ Files can be found [here](docker/dynamic_revproxy).
 
 ### Configuration
 
-We first tried the method shown in the webcasts but we weren't really happy with the result as it required to inspect the containers and it use a pretty *dirty* solution to create the `.conf` file.
+We first tried the method shown in the webcasts but we weren't really happy with the result as it required to inspect the containers and it uses a pretty *dirty* solution to create the `.conf` file.
 We chose to work with the network offered by Docker and its internal DNS.
 
 We can create multiple [Docker networks](https://docs.docker.com/engine/userguide/networking/#user-defined-networks) in the Docker machine. The container can join this network with a name. Then the network has an internal DNS which is useful in our case so we don't have to bother with containers IPs.
@@ -243,3 +243,116 @@ The Dockerfile is exactly the same as the third step.
 To launch the reverse proxy, simply execute the script `start.sh`, select step 05 and navigate to http://truanisei.res.ch:8080/. Everything should be working fine even if the Docker containers hasn't been launched in a specific order.
 
 To verify this behavior, simply modify the script `scripts/step05.sh` and edit last lines to change the order of the containers.
+
+## Additional step: Load balancing and dynamic cluster management
+
+<p align="center">
+    <img width="40%" src="https://github.com/containous/traefik/raw/master/docs/img/traefik.logo.png" alt="Træfik" title="Træfik" />
+</p>
+
+By searching for a solution to this additional step, we found [Træfik](https://traefik.io). As well as its awesome logo, Træfik is simple to use and perfectly answers our needs.
+
+Files can be found [here](docker/traefik).
+
+### Configuration
+
+We built a Docker image named `truanisei/traefik` which will behave as our reverse proxy. This Docker image has as base [traefik](https://hub.docker.com/_/traefik/).
+
+The first thing to do is to configure Træfik. To do so, we created a file named `traefik.toml` with the following content:
+
+```TOML
+# Web configuration backend
+[web]
+address = ":9000"
+
+# Docker configuration
+[docker]
+domain = "truanisei.res.ch"
+watch = true
+```
+
+With this configuration, we tell Træfik to offer a web management UI on the port 9000. Then we modify its Docker configuration with our domain and specify the `watch` option to `true`.
+
+With `watch` option enabled, Træfik will listen on the Docker socket and manage dynamic cluster. It's simple as that.
+
+Now that dynamic cluster management has been taken care of, we have to configure the Træfik's load balancer.
+
+The load balancer is configured in the Dockerfile of the images we built for steps 02 and 04. We simply have to add environment variables. The rest will be handled by Træfik.
+
+Here's the new Dockerfile for the image `truanisei/ajax_http`:
+
+```Dockerfile
+FROM php:apache
+
+# Traefik configuration
+LABEL "traefik.backend"="httpnode"
+LABEL "traefik.backend.loadbalancer.sticky"="false"
+LABEL "traefik.frontend.rule"="PathPrefix: /"
+LABEL "traefik.port"="80"
+
+COPY src /var/www/html
+```
+
+In this configuration, we define a name for the nodes (`httpnode`), use sticky sessions or not (`false` for this image), the `PathPrefix` and the port.
+
+And here's the new Dockerfile for the image `truanisei/dynamic_http`:
+
+```Dockerfile
+FROM node:latest
+
+COPY src /opt/app
+
+WORKDIR /opt/app
+RUN npm install
+
+# Traefik configuration
+LABEL "traefik.backend"="apinode"
+LABEL "traefik.backend.loadbalancer.sticky"="true"
+LABEL "traefik.frontend.rule"="PathPrefixStrip: /api/random"
+LABEL "traefik.port"="80"
+
+CMD ["node", "/opt/app/server.js"]
+```
+
+In this configuration, we also define a name for the nodes, enable sticky sessions and the `PathPrefixStrip`, which is relative to the `PathPrefix` we set previously.
+
+### Launching and testing
+
+To launch the reverse proxy, simply execute the script `start.sh`, select step 06 and navigate to http://truanisei.res.ch:8080/. It will show the expected page.
+
+You can also browse http://truanisei.res.ch:9000/ to access Træfik's management UI. It will be automatically refreshed if a container is killed.
+
+To test and view traffic, listen to the Docker container running `truanisei/traefik` and enjoy debug logging.
+
+## Additional step: Docker Management UI
+
+This additional step required us to develop a management UI for Docker.
+
+### Configuration
+
+The backend was written with Node.js and the frontend with Angular.js and Foundation framework.
+
+Here are the API routes:
+
+| Method | URL | Description |
+| --- | --- | --- |
+| `GET` | `/api/images/list` | List of images |
+| `GET` | `/api/containers/list` | List of containers |
+| `POST` | `/api/containers/create` | Create a container from `{ Image: imageName }` payload |
+| `POST` | `/api/containers/killall` | Kill all containers |
+| `POST` | `/api/containers/:id/kill` | Kill container with `id` |
+| `POST` | `/api/containers/:id/start` | Start container with `id` |
+| `DELETE` | `/api/containers` | Remove all stopped containers |
+| `DELETE` | `/api/containers/:id` | Remove container with `id` |
+
+### Launching and testing
+
+To launch the UI, open a terminal from this directory and execute the following commands:
+
+```bash
+cd docker_ui
+npm install
+node server.js
+```
+
+Browse http://127.0.0.1:3000/ and play with it.

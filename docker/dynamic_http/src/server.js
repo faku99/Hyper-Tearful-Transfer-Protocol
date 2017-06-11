@@ -2,15 +2,9 @@ const async = require('async');
 const datamuse = require('datamuse');
 const express = require("express");
 
-var app = express();
+var router = express();
 
-app.use(express.static(__dirname + '/public'));
-
-app.get("/", function(req, res) {
-    res.sendFile(__dirname + '/public/index.html');
-});
-
-app.get("/api/random", function(req, res) {
+router.get("/", function(req, res) {
     async.parallel([
         function(callback) {
             pickOneWordByLetter('h').then(function(result) {
@@ -63,4 +57,4 @@ function randomEntry(array) {
     return array[Math.floor(Math.random() * array.length)];
 }
 
-app.listen(3000);
+router.listen(80);

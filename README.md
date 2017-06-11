@@ -8,7 +8,6 @@ This repository contains our solutions to the specifications given [here](https:
 It is composed of folders and files, which are:
 - `docker/`: contains all docker images needed for this lab assignment.
 - `docker_ui/`: contains a management UI for Docker.
-- `images/`: contains figures used in this report.
 - `scripts/`: scripts used by `start.sh`. They **MUST NOT** be executed directly.
 - `start.sh`: script used to easily launch containers for each step.
 
@@ -28,7 +27,7 @@ We also had to choose a bootstrap template so our site has a nice looking visual
 
 As we are using an almost ready-to-go image, there wasn't a lot to do in the Dockerfile.
 
-```
+```Dockerfile
 FROM php:apache
 
 COPY src /var/www/html
@@ -57,13 +56,13 @@ We chose [node](https://hub.docker.com/_/node/) as our base image. It is require
 Finally, to make four requests in parallel and wait for their result, we used the NPM module [async](https://www.npmjs.com/package/async).
 
 The JSON payload has the following form:
-```
+```JSON
 ["Honcho","Tamarind","Take","Pooch"]
 ```
 
 ### Dockerfile
 
-```
+```Dockerfile
 FROM node:latest
 
 COPY src /opt/app
@@ -85,110 +84,121 @@ To launch the server, simply execute the script `start.sh`, select step 02 and n
 You should receive an array of words whose acronym is HTTP, which fulfill the requested assignment for this step. To refresh the data, simply reload the page.
 
 ## Step 3: Reverse proxy with apache (static configuration)
-In this step, we will configure a php apache to be used as a reverse proxy to serve our both server (static and dynamic) developped in the steps 1 and 2.
-The purpose of a reverse proxy is to offer one entry point for multiple path and IP. In our case it will be a running container and the only one accessible outside of the Docker machine. Our static and dynamic servers will be running too but we don't want them to be accessed directly. So we will connect to the reverse proxy and it will serve us the content we want from the other containers.
 
-### The Docker image
-In this step the docker image will need a little bit more configuration than the previous ones. In cause is the fact that we need to add our configuration files (where the virtual host is described) and enable theses configurations.
+In this step, we will configure Apache to be used as a reverse proxy to serve both our servers (apache and express.js) developed in the first two steps.
 
-```
-FROM php:7.1.5-apache
+The purpose of a reverse proxy is to offer one entry point for multiple paths and IPs. In our case, it will be a running container and the only one accessible outside of the Docker machine. Our static and dynamic servers will be running too but we don't want them to be accessed directly. So we will connect to the reverse proxy and it will serve us the content we want from the other containers.
 
-COPY conf/ /etc/apache2/sites-available/
+Files can be found [here](docker/static_revproxy).
 
-RUN a2enmod proxy proxy_http
-RUN a2ensite 000-* 001-*
-```
+### Configuration
 
-We want to copy our files which are in the conf/ folder into the /etc/apache2/sites-available/ folder in the container.
+We configured our proxy so that at the URL
+- `/`, static HTTP server is served (step 01),
+- `/api/random/`, dynamic HTTP server is served (step 02).
 
-```
+To do so, we had to write to following `000-truanisei.conf`, which is the file holding the configuration for the host `truanisei.res.ch`:
+
+```ApacheConf
 <VirtualHost *:80>
+    ServerName truanisei.res.ch
 
-ServerName truanisei.res.ch
+    ProxyPass "/api/random/" "http://172.17.0.3:80/"
+    ProxyPassReverse "/api/random/" "http://172.17.0.3:80/"
 
-ProxyPass "/api/random/" "http://172.17.0.3:3000/api/random/"
-ProxyPassReverse "/api/random/" "http://172.17.0.3:3000/api/random/"
-
-
-ProxyPass "/" "http://172.17.0.2:80/"
-ProxyPassReverse "/" "http://172.17.0.2:80/"
-
-
+    ProxyPass "/" "http://172.17.0.2:80/"
+    ProxyPassReverse "/" "http://172.17.0.2:80/"
 </VirtualHost>
 ```
 
-We use the ProxyPass and ProxyPassReverse to do so. It should go from the more specific to the more general (in our case `/api/random` is before `/`). It tells the container running as a reverse proxy which container should respond when a certain URL is asked. The weak point of a static configuration like this, is that we have to know the IP of the containers and they should always be the same as the ones configured. It means we have to launch the containers in a precise order and check if the docker machine set their IP corresponding with our conf.
-We also modified the `000-default.conf` to redirect wrong path.
+You can see that the servers IPs are hard-coded. That's because we have a static configuration, which will be made better in the fifth step.
 
+**Beware**: Because of the static configuration, containers have to be launched in this specific order:
+1. `truanisei/static_http`
+2. `truanisei/dynamic_http`
+3. `truanisei/static_revproxy`
+
+To access this reverse proxy, you might want to add this line to your `hosts` file:
+```
+172.17.0.1      truanisei.res.ch
+```
+If you're using Windows or macOS, you must replace `172.17.0.1` by `192.168.99.100`.
+
+### Dockerfile
+
+```Dockerfile
+FROM php:apache
+
+RUN a2enmod proxy
+RUN a2enmod proxy_http
+
+COPY ./000-truanisei.conf /etc/apache2/sites-available/
+
+RUN a2ensite 000-truanisei*
+```
+
+This Dockerfile is quite simple. We enable Apache modules `proxy` and `proxy_http`. Then, we copy the configuration explained above to the path `/etc/apache2/sites-available` which, speaking for itself, contains configuration for available sites. Finally, we enable the site whose configuration matches `000-truanisei*`.
+
+### Launching and testing
+
+To launch the reverse proxy, simply execute the script `start.sh`, select step 03 and navigate to http://truanisei.res.ch:8080/. You will land on the page we first saw at step 01.
+
+You could also browse http://truanisei.res.ch:8080/api/random/ and be greeted by an HTTP acronym as saw in previous step.
 
 ## Step 4: AJAX requests with JQuery
-This step purpose is to link our static and dynamic content. We will use AJAX requests with JQuery to do so. It will refresh dynamicaly the static content with the payload received from the dynamic at a fixed rate. In our case, the big text will change with different words forming the *HTTP* acronym.
-We will use a script in **NodeJS** to retrieve the payload and to change the element in the static content with our datas. It will use the **JQuery** library.
 
-### Changing the index.html in the static server
-We started by changing the `index.html` file in our static server developped in step 1. First we have to identify the element we want to be refreshed with the dynamic content. To do s, we used the developper tools offere by **Google Chrome**.
-![The element and it's id](images/element.png)
+This step's purpose is to link our static and dynamic content. We will use AJAX requests with [JQuery](https://jquery.com/) to do so. It will dynamically refresh the static content with the payload received from the dynamic server at a fixed rate. In our case, the header text will change with different words forming the HTTP acronym.
 
-We found the id: `homeHeading`.
+We will use an AJAX request made with the JQuery library to retrieve content from the backend API and change the header text.
 
-We now have to add our script into the `index.html` file. Our script is called `ajax.js` and is at the same level as `index.html`.
+Files can be found [here](docker/ajax_http).
 
-```
-...
+### Configuration
 
-<!-- Generate the HTTP acronym -->
-<script src="ajax.js"></script>
-```
+The main *challenge* of this step was to write the JQuery script. The first thing we had to find was the attribute `id` of the HTML element handling the header text. By quickly looking into `index.html`, we found out that is was `#homeHeading`.
 
-### Developping the script with JQuery
-The purpose of the script is to retrieve the JSON from our dynamic server container and to change the element previously found.
-To do so we use the **JQuery** library. It allows us to modify an element of the html file inside a script.
-
-``` javascript
+```javascript
 $(function() {
     function getAcronym() {
-        $.getJSON("/api/random/", function( acronym ) {
-            var message = "";
-            message = acronym[0] + " " + acronym[1] + " " + acronym[2] + " " + acronym[3];
+        $.getJSON("/api/random/", function(acronym) {
+            var message = acronym.join(' ');
 
             $("#homeHeading").text(message).css('color', 'black');;
         });
     };
 
     setInterval(getAcronym, 3000);
-
 });
 ```
 
-First we `$.getJSON(/api/random/, ...)` to retrieve our JSON payload containing the words.
+Every three seconds, this script simply asks the backend a new value for the acronym and replaces the header text by the result. It also makes the text black.
 
-Then we create a message wth the four words. Finally the `$("#homeHeading")...` is where we get our element and modifiy it with our text. The # means we want retrieve it by id (which is homeHeading in our case).
+The last thing to do was to include this script into the `index.html` file so it can be loaded and ran upon page loading.
 
-### Testing
-We now have a fully operating reverse proxy and a static frontend wich is updated with the datas from the dynamic backend.
-We
+### Dockerfile
 
-![AJAX requests done by the browser](images/dynamic_request.png)
+The Dockerfile is exactly the same as the first step.
 
-![Content of a payload](images/payload_content.png)
+### Launching and testing
 
-We see the AJAX request made by the browser and the content of one of them.
-And here is the result (sadly we couldn't put a gif to show it).
-![Result](images/result.png)
+To launch the website, simply execute the script `start.sh`, select step 04 and navigate to http://truanisei.res.ch:8080/. You'll see that the header text is updated every three seconds with a new acronym.
 
+By opening the *Developer console* in your browser, we see that AJAX requests are made by the browser and we can view their content.
 
 ## Step 5: Dynamic reverse proxy configuration
-In this step, we will show you a solution to get rid of the static configuration of the reverse proxy. The goal is to have a way to launch the containers in what order we prefer and having a working reverse proxy without needing to rebuild the image.
 
-### Our solution
-We first tried the method shown in the webcast but we weren't really happy with the result as it required to inspect the containers and it use a pretty custom solution to create the conf file.
-We chosed to work with the network offered by Docker and it internal DNS.
+In this step, we will get rid of the the reverse proxy static configuration. The goal is to have a way to launch the containers in the order we want and having a working reverse proxy without needing to rebuild the image.
 
-### Docker network
-We can create multiple [Docker networks](https://docs.docker.com/engine/userguide/networking/#user-defined-networks) in the Docker machine. The container can join this network with a name. Then the network has an internal DNS which is useful in our case so we don't have to work with ip.   
+Files can be found [here](docker/dynamic_revproxy).
 
-``` bash
+### Configuration
+
+We first tried the method shown in the webcasts but we weren't really happy with the result as it required to inspect the containers and it use a pretty *dirty* solution to create the `.conf` file.
+We chose to work with the network offered by Docker and its internal DNS.
+
+We can create multiple [Docker networks](https://docs.docker.com/engine/userguide/networking/#user-defined-networks) in the Docker machine. The container can join this network with a name. Then the network has an internal DNS which is useful in our case so we don't have to bother with containers IPs.
+
+```bash
 docker build -t truanisei/ajax_http ./ajax_http/
 docker build -t truanisei/dynamic_http ./dynamic_http/
 docker build -t truanisei/dynamic_revproxy ./dynamic_revproxy/
@@ -204,13 +214,12 @@ docker run -d --name=httpnode --network resnetwork truanisei/ajax_http
 docker run -d --name=apinode --network resnetwork truanisei/dynamic_http
 ```
 
-First we create our own network resnetwork if it is not already existing. It allows us to enable DNS resolution, thing the default Docker network doesn't do.
+First we create our own network named `resnetwork` if it doesn't already exist. It allows us to enable DNS resolution, thing the default Docker network doesn't do.
 We see the `--network resnetwork` option in the run command.
 
-### Changes in the configuration file
-To make it work with the DNS we had to modify our previous configuration file (the static one).
+To make it work with the DNS, we had to modify our previous configuration file (the static one).
 
-``` bash
+```ApacheConf
 <VirtualHost *:80>
     ServerName truanisei.res.ch
 
@@ -221,5 +230,16 @@ To make it work with the DNS we had to modify our previous configuration file (t
     ProxyPassReverse "/" "http://httpnode:80/" disablereuse=On
 </VirtualHost>
 ```
-We had to replace the ip by the names we will set when typing the `run` command.   
-The `disablereuse=On` is a precaution took in case you stop the container and run it again and it doesn't have the same ip. It tells the DNS not to save the ip for a given name in its cache.
+We had to replace the hard-coded IPs by the names we set when typing the `run` command.
+
+The `disablereuse=On` is a precaution took so the DNS doesn't use its cache to resolve IP.
+
+### Dockerfile
+
+The Dockerfile is exactly the same as the third step.
+
+### Launching and testing
+
+To launch the reverse proxy, simply execute the script `start.sh`, select step 05 and navigate to http://truanisei.res.ch:8080/. Everything should be working fine even if the Docker containers hasn't been launched in a specific order.
+
+To verify this behavior, simply modify the script `scripts/step05.sh` and edit last lines to change the order of the containers.

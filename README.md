@@ -250,7 +250,7 @@ To verify this behavior, simply modify the script `scripts/step05.sh` and edit l
     <img width="40%" src="https://github.com/containous/traefik/raw/master/docs/img/traefik.logo.png" alt="Træfik" title="Træfik" />
 </p>
 
-By searching for a solution to this additional step, we found [Træfik](https://traefik.io). As well as its awesome logo, Træfik is simple to use and perfectly answers our needs.
+By searching for a solution to this additional step, we found [Træfik](https://traefik.io). As well as having an awesome logo, Træfik is simple to use and perfectly answers our needs.
 
 Files can be found [here](docker/traefik).
 

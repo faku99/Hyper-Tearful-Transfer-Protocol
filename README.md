@@ -74,7 +74,7 @@ RUN npm install
 CMD ["node", "/opt/app/server.js"]
 ```
 
-This Dockerfile simply copy source files to `/opt/app/`. Then, we set the working directory as `/opt/app/` and run `npm install` to install NPM dependencies.
+This Dockerfile simply copies source files to `/opt/app/`. Then, we set the working directory as `/opt/app/` and run `npm install` to install NPM dependencies.
 
 Once done, the server is launched.
 

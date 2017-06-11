@@ -20,40 +20,23 @@ Files can be found [here](docker/static_http).
 ### Configuration
 We chose [php:apache](https://hub.docker.com/_/php/) as our base image. It packs all the tools we need for our static httpd server (file system already configured, php and apache installed, ...).
 
+We also had to choose a bootstrap template so our site has a nice looking visual. To do so, we used [Creative](https://startbootstrap.com/template-overviews/creative/). We modified it a bit so it uses CDN links instead of vendor scripts for loading its dependencies.
+
 ### Dockerfile
 As we are using an almost ready-to-go image so there wasn't a lot to do in the Dockerfile.
 
 ```
 FROM php:apache
 
-# Traefik configuration
-LABEL "traefik.backend"="httpnode"
-LABEL "traefik.backend.loadbalancer.sticky"="false"
-LABEL "traefik.frontend.rule"="PathPrefix: /"
-LABEL "traefik.port"="80"
-
 COPY src /var/www/html
 ```
 
-Don't mind *Traefik configuration* for now, it will be used later for additional steps.
+As you can see, we simply copy the folder containing the sources into the folder `/var/www/html` from which Apache will display content.
 
-As you can see, we simply copy the folder containing
+### Launching and testing
+To launch the website, simply execute the script `start.sh` and navigate to http://127.0.0.1:8080.
 
-### Adding the contents to the image
-We now have an almost ready image. We have to put the static content into it to be able to display our site in the browser.  
-Here is the result if we run a container with the image as it is now.
-```
-docker run -p 8080:80 -it res/static_httpd
-```
-
-![Result if we try to access 192.168.99.100:8080 now](images/forbidden.png)
-
-For our content, we chosed the [Creative](https://startbootstrap.com/template-overviews/creative/) bootstrap template. We modified it a bit to be more personal (`index.html`) and it was ready to go. As we saw in the `Dockerfile`, the content should go on the src/ folder in our machine to be transfered to the docker image.  
-
-### Testing the site with a browser
-Our static appache httpd server is now ready to be tested with a web browser. We used *Chrome* and *Mozilla Firefox* to test it.
-
-![The content of the server running](images/working.png)
+You should be greeted by an astonishing single-page website that fulfill the requested assignment for this step.
 
 ## Step 2: Dynamic HTTP server with express.js
 In this step we will setup a HTTP sever in **NodeJS** using the **express.js** node module.

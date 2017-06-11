@@ -273,7 +273,7 @@ watch = true
 
 With this configuration, we tell Træfik to offer a web management UI on the port 9000. Then we modify its Docker configuration with our domain and specify the `watch` option to `true`.
 
-With `watch` option enabled, Træfik will listen on the Docker socket and manage dynamic cluster. It's simple as that.
+With `watch` option enabled, Træfik will listen on the Docker socket and manage dynamic cluster. It's as simple as that.
 
 Now that dynamic cluster management has been taken care of, we have to configure the Træfik's load balancer.
 

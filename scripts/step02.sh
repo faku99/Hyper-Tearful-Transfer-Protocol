@@ -12,4 +12,4 @@ docker build -t truanisei/dynamic_http $docker_dir/dynamic_http/
 
 docker run -d -p 3000:3000 truanisei/dynamic_http
 
-echo "Step 02: Port 3000 forwarded to 3000."
+echo "Step 02: Port 80 forwarded to 8080."

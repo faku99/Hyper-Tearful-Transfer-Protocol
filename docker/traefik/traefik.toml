@@ -1,3 +1,5 @@
+debug = true
+
 # Web configuration backend
 [web]
 address = ":9000"
